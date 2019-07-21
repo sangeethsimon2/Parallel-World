@@ -5,9 +5,44 @@ using namespace std;
 
 #define Master 0
 
-int main()
+//void initialize(double *, int );
 
-{
+void initialize(const int &id, double *u, const int &size){
+
+	cout<<"The process: "<<id<<" is initializing its data."<<"\n";
+
+	if(id==0){
+		for(int i=0;i<=size;i++){
+			u[i]=50.0;
+		}
+	}
+
+	else{
+		for(int i=0;i<=size;i++){
+			u[i]=25.0;
+		}
+	
+	}
+}
+
+void boundary_condition(const int &id, double *u, const int &size, const int &N_Procs){
+	cout<<"The process: "<<id<<" is setting its boundary condition"<<"\n";
+
+	// If left most process, then set the left boundary solution as u=0
+	if(id==0){
+	
+		u[0] = 0.0;
+	}
+
+	
+	// If right most process, then set the right boundary solution as u=100
+	if(id==(N_Procs-1)){
+		u[size+1] = 100.0; 
+	}
+
+}
+
+int main(){
 
 	// Problem variables
 
@@ -57,7 +92,27 @@ int main()
 	cout<<"Process "<<taskid<<" has started \n";
 
 	
+	//Declare variables that each process initializes
+
+	//Declare variable to store the temperature values. Size as per predecieded load of each processor. Two extra memory bits provided to store neighbour information
+	double u [N_Load+2];
+
+
+
+	// Let all process initialize their data
+	initialize(taskid,u,N_Load+2);
+
+
+	// Let the left most and right most processes set their Boundary condition
+	boundary_condition(taskid,u,N_Load,N_Procs);
+
+	
+	
+	/*
+	if(taskid==3){
 		
+		cout<<"Initialized value is:"<<u[26]<<"\n";
+	}*/	
 
 	
 	// Close the MPI enviornment
