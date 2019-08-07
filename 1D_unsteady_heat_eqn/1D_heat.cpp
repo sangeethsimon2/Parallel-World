@@ -53,6 +53,7 @@ int main(){
 
 	//Variable for MPI tasks
 	int taskid, numtasks;
+	double wtime_start,wtime_elapsed;
 
 	// Variables relating to the finite difference equation
 
@@ -70,6 +71,10 @@ int main(){
 
 	// Obtain grid size 
 	double del_x = L/N_Dof;
+
+	//Variable for keeping time
+	double time;
+	int iter;
 
 	// End time of the computation 
 	const double t_end = 1.0;
@@ -90,6 +95,17 @@ int main(){
 	MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
 
 	cout<<"Process "<<taskid<<" has started \n";
+
+	// Declare a variable to store the MPI_Send and Recv statuses
+	MPI_Status status;	
+
+	// Record the starting time
+	if ( taskid == 0 ) {
+	    wtime_start = MPI_Wtime();
+	  }
+
+	
+
 
 	
 	//Declare variables that each process initializes
@@ -114,7 +130,75 @@ int main(){
 		cout<<"Initialized value is:"<<u[26]<<"\n";
 	}*/	
 
+
+	// Initialize time
+	time = 0.0;
+
+	iter = 0;
+
+	// All processes Loop till end time is reached 
+	//while(time<t_end){
+	while(iter<1){
+
+		// Allow processes to exchange information at their boundaries
 	
+
+		// [] @ @ ...@ []  [] @ @ ... @ [] [] @ @ ... @ [] [] @ @ ... @ [] 
+
+		// |Processor 1	|  |Processor 2  | | Processor 3 | |Processor 4 | 
+
+		// [] - boundary buckets for collecting neighbour information
+		
+		// @ - internal node value
+
+		// tag 1 = Information tag from taskid > 0 to previous tasks
+		
+		// tag 2 = Information tag from taskid < N_Procs - 1 to forward tasks
+
+
+
+		// Configure all processes with taskid > 0 to MPI_Send their u[1] data to the previous task
+
+		if(taskid > 0){
+			MPI_Send(&u[1], 1, MPI_DOUBLE, taskid-1, 1, MPI_COMM_WORLD );
+		}
+
+		// Configure all processes except the last one to MPI_Recieve the u[1] data being send by the processes ahead
+
+		if(taskid < N_Procs-1){
+			MPI_Recv(&u[N_Load+1],1, MPI_DOUBLE, taskid+1, 1, MPI_COMM_WORLD,&status );
+		
+		} 
+
+
+		// Configure all processes except the last one to MPI_Send u[N_Load] data to the process ahead
+		if(taskid < N_Procs-1){
+
+			MPI_Send(&u[N_Load],1,MPI_DOUBLE,taskid+1,2,MPI_COMM_WORLD );
+		}	
+
+		// Configure all processes with taskid > 0 to MPI_Recv u[N_Load] data from the previous processes
+		if( taskid > 0){
+
+			MPI_Recv(&u[0],1,MPI_DOUBLE,taskid-1,2,MPI_COMM_WORLD,&status);
+		}
+
+
+		//Increment the iteration counter 
+		iter ++;
+	}
+	
+
+	//measure the elapsed wall clock time
+
+	if ( taskid == 0 ){
+    		wtime_elapsed = MPI_Wtime () - wtime_start;
+		cout << "\n";       
+    		cout << "  Wall clock elapsed seconds = " << wtime_elapsed << "\n";      
+  	}
+
+	
+
 	// Close the MPI enviornment
 	MPI_Finalize();
 		
